@@ -1,6 +1,23 @@
 from collections import deque 
 
-# machine for a+ 
+# machine for aa+ 
+def aa():
+    name = "aa+"
+    states = ["q0", "q1", "qaccept", "qreject"]
+    sigma = ["a", "_"]
+    gamma = ["a", "_"]
+    start = "q0"
+    accept = "qaccept"
+    reject = "qreject"
+    transitions = {
+        ("q0", "a"): [("q1", "a", "R")], 
+        ("q0", "_"): [("qreject", "_", "R")], 
+        ("q1", "a"): [("q1", "a", "R")], 
+        ("q1", "_"): [("qaccept", "_", "R")], 
+    }
+    return name, states, sigma, gamma, start, accept, reject, transitions
+
+# a+ machine for testing 
 def a(): 
     name = "a+"
     states = ["q0", "q1", "qaccept", "qreject"]
@@ -11,49 +28,49 @@ def a():
     reject = "qreject"
     transitions = {
         # if you are in state q1 and the head reads a, go to q1 or to q2
-        ("q0", "a"): [("q0", "a", "R"), ("q1", "a", "R")], 
+        ("q0", "a"): [("q0", "a", "R")], 
+        ("q0", "_"): [("q1", "_", "L")],
         # accept if blank is found 
-        ("q1", "_"): [("qaccept", "_", "L")], 
+        ("q1", "_"): [("qaccept", "_", "L")],
         # reject if after blank another symbol is found 
-        ("q1", "a"): [("qreject", "a", "L")],
+        #("q1", "a"): [("qreject", "a", "L")],
     }
 
     return name, states, sigma, gamma, start, accept, reject, transitions
 
-# machine for aa+
-def aa():
-    name = "aa+"
-    states = ["q0", "q1", "qaccept", "qreject"]
-    sigma = ["a", "_"]
-    gamma = ["a", "_"]
-    start = "q0"
-    accept = "qaccept"
-    reject = "qreject"
-
-    transitions = {
-        ("q0", "a"): [("q1", "a", "R")], 
-        ("q0", "_"): [("qreject", "_", "R")], 
-        
-    }
-
-
-def trace(machine, string, max_depth=100): 
+def trace(machine, string, max_depth=100, max_transitions=200, debug=False): 
     name, states, sigma, gamma, start, accept, reject, transitions = machine()
     print("Machine: " + name)
-    print("Input: " + string)
+    print("Initial string: " + string)
     # make a queue for bfs exploration 
     queue = deque([(string, start, 0, 0)]) 
-
+    transitions_total = 0
     while queue:
         # get parent configuration from the queue 
         tape, state, head, depth = queue.popleft()
-        if state == accept: 
-            print(f"The string was accepted in {depth} transitions")
+        transitions_total += 1
+        if debug:
+            print('\n')
+            print(f"Step: {transitions_total}")
+            print(f"State: {state}")
+            print(f"Head: {head}")
+            print(f"Tape: {tape}")
+            print(f"Depth: {depth}")
+        if transitions_total > max_transitions:
+            print(f"\nExecution stopped after reaching {max_transitions} max transitions.")
             return 
-        if state == reject or depth >= max_depth: 
-            continue 
-
-        if head < len(tape):
+        if depth >= max_depth: 
+            print(f"\nExecution stopped after reaching {max_depth} max depth.")
+            return 
+        if state == accept: 
+            print(f"\nThe string was accepted in {depth} transitions.")
+            print(f"Total transitions: {transitions_total}")
+            return 
+        if state == reject: 
+            print(f"\nThe string was rejected after {depth} transitions.")
+            print(f"Total transitions: {transitions_total}")
+            return
+        if head < len(tape): # current head character 
             curr = tape[head]
         else: 
             curr = '_'
@@ -65,22 +82,36 @@ def trace(machine, string, max_depth=100):
                     tape2[head] = s
                 else:
                     tape2.append(s)
+                # update head 
                 if dir == 'R':
                     head2 = head + 1
                 else:
                     head2 = head - 1
                 head2 = max(0, head2)
                 queue.append((''.join(tape2), next, head2, depth+1))
-    print(f"String rejected in {max_depth} transitions.")
+    print(f"Execution stopped without accept or reject after {transitions_total}.\n") 
 
+# handle multiple strings 
+
+
+# test cases 
 print("Test case 1: Input = aaa\n")
-trace(a, "aaa")
+trace(aa, "aaa")
 
-print("Test case 2: Input = a\n")
-trace(a, "a")
+print ("\n")
 
-print("Test case 2: Input = ""\n")
-trace(a, "")
+print("Test case 2: Input = aaaa\n")
+trace(aa, "aaaa")
 
-print("Test case 2: Input = b\n")
-trace(a, "b")
+print ("\n")
+
+print("Test case 3: Input = ""\n")
+trace(aa, "")
+
+print ("\n")
+
+print("Test case 4: Input = b\n")
+trace(aa, "b")
+
+print("Test case 5: Input = aaaaa\n")
+trace(a, "aaaaa", max_depth=15, max_transitions=15, debug=True)
