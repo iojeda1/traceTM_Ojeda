@@ -1,7 +1,41 @@
-from collections import deque 
+# Example NTM Definitions
+machines = {
+    "a+": {
+        "states": ["q1", "q2", "q3"],
+        "start_state": "q1",
+        "accept_state": "q3",
+        "reject_state": "qrej",
+        "transitions": {
+            ("q1", "a"): [("q1", "a", "R"), ("q2", "a", "R")],
+            ("q2", "_"): [("q3", "_", "L")]
+        },
+    },
+    "aa+": {
+        "states": ["q1", "q2", "q3"],
+        "start_state": "q1",
+        "accept_state": "q3",
+        "reject_state": "qrej",
+        "transitions": {
+            ("q1", "a"): [("q2", "a", "R")],
+            ("q1", "_"): [("qrej", "_", "R")],
+            ("q2", "a"): [("q3", "a", "R")],
+            ("q2", "_"): [("qrej", "_", "R")],
+            ("q3", "a"): [("q3", "a", "R")],
+            ("q3", "_"): [("q3", "_", "L")],
+        },
+    },
+}
 
-def simulate_ntm(name, states, start_state, accept_state, reject_state, transitions, input_string, max_depth):
+
+def simulate_ntm(machine, input_string, max_depth):
     """Simulate an NTM with the given configuration."""
+    name = machine["name"]
+    states = machine["states"]
+    start_state = machine["start_state"]
+    accept_state = machine["accept_state"]
+    reject_state = machine["reject_state"]
+    transitions = machine["transitions"]
+
     tree = []  # Configuration tree: a list of lists of triples
     parents = {}  # Track parent-child relationships for path reconstruction
     initial_config = ("", start_state, input_string)
@@ -12,6 +46,7 @@ def simulate_ntm(name, states, start_state, accept_state, reject_state, transiti
     accepted_config = None
 
     print("\n--- Simulation Start ---")
+    print(f"Machine Name: {name}")
     print(f"Initial Configuration: {initial_config}\n")
 
     while tree and step_count < max_depth:
@@ -44,12 +79,9 @@ def simulate_ntm(name, states, start_state, accept_state, reject_state, transiti
                     new_tape = write_char + (tape if left else rest)
                 new_config = (new_left, next_state, new_tape)
 
-                # Prioritize paths leading to q2 over q1
-                if new_config not in parents or (next_state == "q2" and state == "q1"):
-                    print(f"Adding/Updating Parent for {new_config}: {left, state, tape}")
+                if new_config not in parents:
                     parents[new_config] = (left, state, tape)
-                    if new_config not in next_level:
-                        next_level.append(new_config)
+                    next_level.append(new_config)
 
         if accepted_config:
             break
@@ -73,19 +105,10 @@ def trace_accepting_path(parents, accepted_config):
     path = []
     current_config = accepted_config
 
-    print("\n--- Path Reconstruction ---")
-    print(f"Starting from accepting configuration: {current_config}")
-
-    # Backtrack using the parents dictionary
     while current_config is not None:
-        path.insert(0, current_config)  # Add the current configuration to the start of the path
-        print(f"Adding to path: {current_config}")
-        current_config = parents.get(current_config)  # Move to the parent configuration
-        if current_config:
-            print(f"Moving to parent: {current_config}")
+        path.insert(0, current_config)
+        current_config = parents.get(current_config)
 
-    print("--- Full Path Reconstructed ---")
-    print(path)
     return path
 
 
@@ -103,39 +126,33 @@ def output_results(name, accepting_path, steps, max_depth, is_accepted):
         print(f"String rejected in {steps} steps (or terminated at max depth {max_depth}).")
 
 
+def test_all_machines():
+    """Run test cases for all machines."""
+    test_cases = {
+        "a+": [
+            ("a", "Accept"),
+            ("aaa", "Accept"),
+            ("aaaaa", "Accept"),
+            ("", "Reject"),
+            ("b", "Reject"),
+        ],
+        "aa+": [
+            ("aa", "Accept"),
+            ("aaa", "Accept"),
+            ("aaaa", "Accept"),
+            ("a", "Reject"),
+            ("", "Reject"),
+            ("b", "Reject"),
+        ],
+    }
+
+    for machine_name, cases in test_cases.items():
+        print(f"\nTesting Machine: {machine_name}")
+        machine = {"name": machine_name, **machines[machine_name]}
+        for input_string, expectation in cases:
+            print(f"\nTesting Input: '{input_string}' (Expected: {expectation})")
+            simulate_ntm(machine, input_string, max_depth=10)
 
 
-def test_ntm():
-    """Run multiple test cases for the NTM simulation."""
-    test_cases = [
-        ("a", "Expected: Accept"),          # Single 'a'
-        ("aaa", "Expected: Accept"),       # Multiple 'a's
-        ("aaaaa", "Expected: Accept"),     # Already tested
-        ("", "Expected: Reject"),          # Empty string
-        ("b", "Expected: Reject"),         # Invalid character
-        ("ab", "Expected: Reject"),        # Starts valid, becomes invalid
-        ("aaaaaaaa", "Expected: Accept"),  # Long valid string
-        ("ba", "Expected: Reject"),        # Starts invalid
-    ]
-
-    for input_string, expectation in test_cases:
-        print("\n" + "="*50)
-        print(f"Testing input: '{input_string}' ({expectation})")
-        simulate_ntm(name, states, start_state, accept_state, reject_state, transitions, input_string, max_depth)
-        print("="*50)
-
-
-# Example NTM Definition
-name = "a+"
-states = ["q1", "q2", "q3"]
-start_state = "q1"
-accept_state = "q3"
-reject_state = "qrej"
-transitions = {
-    ("q1", "a"): [("q1", "a", "R"), ("q2", "a", "R")],  # Explore both branches
-    ("q2", "_"): [("q3", "_", "L")]
-}
-
-# Test the NTM
-max_depth = 10
-test_ntm()
+# Run tests
+test_all_machines()
