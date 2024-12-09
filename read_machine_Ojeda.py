@@ -1,3 +1,4 @@
+# Team Ojeda 
 import csv
 def read_csv(file_path):
     # read the CSV file for a+ machine 
@@ -11,7 +12,7 @@ def read_csv(file_path):
     start = lines[4][0]
     accept = lines[5][0]
     reject = lines[6][0]
-    # Parse transitions
+    # parse transitions
     transitions = {}
     for transition_line in lines[7:]:
         curr, input, next, write, direction = transition_line
@@ -108,9 +109,7 @@ def csv_machine(file_path, test_cases, max_depth=10):
     for input, expected_result in test_cases:
         print(f"\nTesting Input: '{input}' (Expected: {expected_result})")
         ntm(machine, input, max_depth=max_depth)
-
-
-# Example usage with the uploaded CSV file
+# testing
 file_path = 'a_plus.csv'
 test_cases = [("a", "Accept"), ("aaa", "Accept"), ("", "Reject"), ("aaaaa", "Accept")]
 csv_machine(file_path, test_cases)
